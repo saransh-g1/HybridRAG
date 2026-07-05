@@ -5,7 +5,7 @@ from pydantic import BaseModel
 # from app.services.retrieval_service import (
 #     RetrievalService,
 # )
-
+from app.services.hyde_service import get_hyde_service
 from app.services.hybrid_retrieval_service import (
     HybridRetrievalService
 )
@@ -24,10 +24,17 @@ class Query(BaseModel):
 def retrieve(
     request: Query,
 ):
+    import time
 
+    start = time.time()
+
+
+    
     chunks = service.retrieve(
         request.query
     )
+
+    print(time.time() - start)
 
     return [
 
@@ -40,3 +47,13 @@ def retrieve(
         for chunk in chunks
 
     ]
+
+@router.post("/retrieve/hyde")
+def hyde(query: Query):
+
+    doc = get_hyde_service().generate(query.query)
+
+    return {
+        "query": query.query,
+        "hypothetical_document": doc,
+        }

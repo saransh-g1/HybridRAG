@@ -1,16 +1,13 @@
-from rag.retrieval.retriever import Retriever
-from rag.retrieval.context import build_context
-
 from rag.prompts.rag_prompt import SYSTEM_PROMPT
 
 from app.services.llm_service import LLMService
-from app.services.retrieval_service import RetrievalService
+from app.services.hybrid_retrieval_service import HybridRetrievalService
 
 class RAGPipeline:
 
     def __init__(self):
 
-        self.retriever = RetrievalService()
+        self.retriever = HybridRetrievalService()
 
         self.llm = LLMService()
 
@@ -19,10 +16,19 @@ class RAGPipeline:
         question: str,
     ):
 
-        chunks = self.retriever.retrieve(question)
+        retrieval = self.retriever.retrieve(question)
+
+        if retrieval["status"] == "LOW_CONFIDENCE":
+
+            return (
+                "I couldn't find sufficiently relevant information "
+                "in the indexed documents to answer confidently."
+            )
+
+        chunks = retrieval["chunks"]
 
         context = "\n\n".join(
-            chunk.text
+            chunk.chunk.text
             for chunk in chunks
         )
 
@@ -30,5 +36,18 @@ class RAGPipeline:
             context=context,
             question=question,
         )
+        answer = self.llm.generate(prompt)
 
-        return self.llm.generate(prompt)
+        result = self.self_rag.evaluate(
+            question,
+            context,
+            answer,
+        )
+
+        if result["supported"]:
+            return answer
+
+        return (
+            "I couldn't verify this answer from the retrieved documents.\n\n"
+            f"Reason: {result['reason']}"
+        )

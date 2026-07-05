@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from app.db.base import Base
 from app.db.session import engine
 from app.api.retrieve import router as retrieve_router
+from app.services.cache.metrics import cache_metrics
 
 # Import models so they're registered
 from app.db import models
@@ -53,3 +54,7 @@ def health():
         "redis": redis,
         "qdrant": qdrant_ok,
     }
+
+@app.get("/cache/metrics")
+def metrics():
+    return cache_metrics()

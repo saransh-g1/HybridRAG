@@ -12,20 +12,27 @@ class LLMService:
             base_url=settings.LLM_BASE_URL,
         )
 
-    def generate(self, prompt: str):
+    def generate(self, prompt: str, system_prompt: str | None = None,):
 
-        response = self.client.chat.completions.create(
-            model=settings.LLM_MODEL,
-            messages=[
+        messages=[]
+        if system_prompt:
+            messages.append(
                 {
                     "role": "system",
-                    "content": "Answer only using the provided context.",
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
+                    "content": system_prompt,
+                }
+            )
+
+        messages.append(
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        )
+        response = self.client.chat.completions.create(
+            model=settings.LLM_MODEL,
+            messages=messages,
+            max_tokens=512,
             temperature=0,
         )
 

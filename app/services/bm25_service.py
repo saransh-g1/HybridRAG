@@ -1,5 +1,5 @@
 from rank_bm25 import BM25Okapi
-
+import re
 from app.db.session import SessionLocal
 from app.repositories.chunk_repository import ChunkRepository
 
@@ -7,28 +7,51 @@ from app.repositories.chunk_repository import ChunkRepository
 class BM25Service:
 
     def __init__(self):
+
         self.index = None
         self.chunk_ids = []
-        self._build()
+        self.corpus = []
 
-    def _build(self):
+        self.rebuild_index()
+
+    def rebuild_index(self):
+
+        print("Building BM25 Index...")
+
         db = SessionLocal()
 
         repo = ChunkRepository(db)
 
         chunks = repo.get_all()
 
-        corpus = []
+        db.close()
 
+        self.corpus = []
         self.chunk_ids = []
 
         for chunk in chunks:
-            corpus.append(chunk.text.lower().split())
+
+            text = chunk.text or ""
+
+            tokens = self.tokenize(text)
+
+            self.corpus.append(tokens)
+
             self.chunk_ids.append(chunk.id)
 
-        self.index = BM25Okapi(corpus)
+        if len(self.corpus):
 
-        db.close()
+            self.index = BM25Okapi(self.corpus)
+
+        else:
+
+            self.index = None
+
+        print(f"Indexed {len(self.chunk_ids)} chunks")
+
+    def tokenize(self, text: str):
+
+        return re.findall(r"\w+", text.lower())
 
     def retrieve(
         self,
@@ -36,14 +59,22 @@ class BM25Service:
         k: int = 20,
     ):
 
+        if self.index is None:
+
+            return []
+
         scores = self.index.get_scores(
-            query.lower().split()
+            self.tokenize(query)
         )
 
         ranked = sorted(
+
             zip(self.chunk_ids, scores),
+
             key=lambda x: x[1],
+
             reverse=True,
+
         )
 
         return ranked[:k]

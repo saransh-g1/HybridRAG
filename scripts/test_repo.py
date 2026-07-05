@@ -1,17 +1,9 @@
-# scripts/test_repo.py
+from app.services.sql.sql_generator import get_sql_generator
 
-from app.db.session import SessionLocal
-from app.repositories.document_repository import DocumentRepository
+generator = get_sql_generator()
 
-db = SessionLocal()
-
-repo = DocumentRepository(db)
-
-doc = repo.create(
-    filename="sample.pdf",
-    file_hash="12345",
+print(
+    generator.generate(
+        "How many documents are indexed?"
+    )
 )
-
-db.commit()
-
-print(doc.id)

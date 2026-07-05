@@ -28,6 +28,8 @@ class Settings(BaseSettings):
 
     QDRANT_COLLECTION: str
 
+    USE_HYDE: bool = False
+
     class Config:
         env_file = ".env"
 

@@ -20,6 +20,10 @@ from app.services.loader_service import LoaderService
 from app.services.splitter_service import SplitterService
 
 from app.services.embedding_service import get_embedding_service
+from app.services.bm25_service import BM25Service
+from app.services.cache.cache_manager import (
+    get_cache_manager,
+)
 
 class IngestionService:
 
@@ -28,6 +32,7 @@ class IngestionService:
         self.embedding = get_embedding_service()
         self.loader = LoaderService()
         self.splitter = SplitterService()
+        self.cache_manager = get_cache_manager()
 
     def _hash_file(self, path: str):
 
@@ -160,7 +165,7 @@ class IngestionService:
             total += len(points)
 
         db.commit()
-
+        BM25Service().rebuild_index()
         db.close()
-
+        get_cache_manager().invalidate_rag()
         return total
